@@ -112,7 +112,14 @@ TeethMin    = 8.5;
 TeethNoLoad = round(-((TeethMax - TeethMin)/(PressureMax - PressureMin)*(PressureMax) - TeethMax));
 
 %% Calculate slip for max pressure (Study for 600 em rpm)
+cyclePlot   = figure;
+cyclePlot.Position  = [50,50,1200,700];
+cycleTyled  = tiledlayout(3,1);
+
+%% Generate tyle for max resistance
 % Calculate slip
+maxTyle     = nexttile;
+
 slipMax     = 1 - TeethMax/TeethNoLoad;
 
 % Calculate rotor speed
@@ -150,15 +157,14 @@ pressureMatrix  = pressureMatrix(1:completedRows,:);
 cycleTimeVector = 0 : sampleTime : (rotorPeriod-sampleTime);
 
 % Plot the results
-cyclePlot = figure;
 hold on
 for iCycle = 1:completedRows
-    plot(cycleTimeVector,pressureMatrix(iCycle,:),'color',COLOR+0.8,'LineWidth',4)
+    plot(cycleTimeVector,pressureMatrix(iCycle,:),'color',COLOR+0.8,'LineWidth',8)
 end
 hold off
 
 hold on
-plot(cycleTimeVector,mean(pressureMatrix),'color',COLOR2,'LineWidth',4)
+plot(cycleTimeVector,mean(pressureMatrix),'color',COLOR2,'LineWidth',2)
 hold off
 
 
