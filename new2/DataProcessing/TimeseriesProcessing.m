@@ -1,0 +1,164 @@
+clear
+close all
+%% Load the txt data
+load('800rpm_min_1ms.txt')
+load('800rpm_min_1ms_b.txt')
+load('700rpm_min_1ms.txt')
+load('700rpm_min_1ms_b.txt')
+load('600rpm_min_1ms.txt')
+load('600rpm_min_1ms_b.txt')
+
+load('800rpm_mid_1ms.txt')
+load('800rpm_mid_1ms_b.txt')
+load('700rpm_mid_1ms.txt')
+load('700rpm_mid_1ms_b.txt')
+load('600rpm_mid_1ms.txt')
+load('600rpm_mid_1ms_b.txt')
+
+load('800rpm_max_1ms.txt')
+load('800rpm_max_1ms_b.txt')
+load('700rpm_max_1ms.txt')
+load('700rpm_max_1ms_b.txt')
+load('600rpm_max_1ms.txt')
+load('600rpm_max_1ms_b.txt')
+
+%% Generate data vectors
+
+sampleTime          = 1e-3; % [sec]
+maxPressure         = 60;   % [bar]
+memoryLength        = 10;   % [bits]
+dataTransformFactor = maxPressure/(2^memoryLength-1); 
+
+% Generate time vectors
+time                = 0:sampleTime:sampleTime*(length(X600rpm_max_1ms)-1);
+
+% Calculate em period
+speedMin            = 600;
+speedMid            = 700;
+speedMax            = 800;
+em600               = 1/(speedMin/60);
+em700               = 1/(speedMid/60);
+em800               = 1/(speedMax/60);
+
+% Generate pressure vectors
+P600rpm_max_1ms     = X600rpm_max_1ms*dataTransformFactor;
+P600rpm_max_1ms_b   = X600rpm_max_1ms_b*dataTransformFactor;
+P700rpm_max_1ms     = X700rpm_max_1ms*dataTransformFactor;
+P700rpm_max_1ms_b   = X700rpm_max_1ms_b*dataTransformFactor;
+P800rpm_max_1ms     = X800rpm_max_1ms*dataTransformFactor;
+P800rpm_max_1ms_b   = X800rpm_max_1ms_b*dataTransformFactor;
+
+P600rpm_mid_1ms     = X600rpm_mid_1ms*dataTransformFactor;
+P600rpm_mid_1ms_b   = X600rpm_mid_1ms_b*dataTransformFactor;
+P700rpm_mid_1ms     = X700rpm_mid_1ms*dataTransformFactor;
+P700rpm_mid_1ms_b   = X700rpm_mid_1ms_b*dataTransformFactor;
+P800rpm_mid_1ms     = X800rpm_mid_1ms*dataTransformFactor;
+P800rpm_mid_1ms_b   = X800rpm_mid_1ms_b*dataTransformFactor;
+
+P600rpm_min_1ms     = X600rpm_min_1ms*dataTransformFactor;
+P600rpm_min_1ms_b   = X600rpm_min_1ms_b*dataTransformFactor;
+P700rpm_min_1ms     = X700rpm_min_1ms*dataTransformFactor;
+P700rpm_min_1ms_b   = X700rpm_min_1ms_b*dataTransformFactor;
+P800rpm_min_1ms     = X800rpm_min_1ms*dataTransformFactor;
+P800rpm_min_1ms_b   = X800rpm_min_1ms_b*dataTransformFactor;
+
+save('PressureData')
+
+%% Generate figures
+% Figure options
+LINEWIDTH   = 0.2;
+FONTSIZE    = 15;
+COLOR       = [0,0,0];
+COLOR2      = [178,34,34]/255;
+YLIM        = [0,32];
+% Generate figures
+
+figID = figure;
+figID.Position  = [50,50,1200,700];
+
+tiledID = tiledlayout(3,1);
+
+nexttile
+plot(time,P600rpm_max_1ms,'color',[0,0,0],'linewidth',LINEWIDTH)
+title(sprintf('Maximum resistance'),'FontSize',FONTSIZE)
+ylabel(sprintf('Pressure [Bar]'),'FontSize',FONTSIZE);
+grid on
+% ylim(YLIM)
+        
+nexttile
+plot(time,P600rpm_mid_1ms,'color',[0,0,0],'linewidth',LINEWIDTH)
+title(sprintf('Medium resistance'),'FontSize',FONTSIZE)
+ylabel(sprintf('Pressure [Bar]'),'FontSize',FONTSIZE);
+grid on
+% ylim(YLIM)
+
+nexttile
+plot(time,P600rpm_min_1ms,'color',[0,0,0],'linewidth',LINEWIDTH)
+title(sprintf('Minimum resistance'),'FontSize',FONTSIZE)
+ylabel(sprintf('Pressure [Bar]'),'FontSize',FONTSIZE);
+xlabel(sprintf('Time [sec]'),'FontSize',FONTSIZE);
+grid on
+% ylim(YLIM)
+
+title(tiledID,sprintf('600 rpm Min, Mid and Max resistance comparison'),'FontSize',FONTSIZE) 
+
+%% Calculate number of teeths without 
+PressureMax = mean(P600rpm_max_1ms);
+PressureMin = mean(P600rpm_min_1ms);
+
+TeethMax    = 7.625;
+TeethMin    = 8.5;
+
+TeethNoLoad = round(-((TeethMax - TeethMin)/(PressureMax - PressureMin)*(PressureMax) - TeethMax));
+
+%% Calculate slip for max pressure (Study for 600 em rpm)
+% Calculate slip
+slipMax     = 1 - TeethMax/TeethNoLoad;
+
+% Calculate rotor speed
+rotorSpeedMax   = speedMin*(1-slipMax);
+rotorPeriod     = 1/(rotorSpeedMax/60);
+
+iSample         = 1;
+sampleMax       = length(P600rpm_max_1ms);
+totalTime       = 0;
+iCycle          = 1;
+cycleTimeIndex  = 1;
+pressureMatrix  = [];
+completedRows   = 0;
+while iSample <= sampleMax
+   if totalTime < rotorPeriod - sampleTime
+       pressureMeasurement                      = P600rpm_max_1ms(iSample);
+       pressureMatrix(iCycle,cycleTimeIndex)    = pressureMeasurement;
+       totalTime                                = totalTime + sampleTime;
+       cycleTimeIndex                           = cycleTimeIndex + 1;
+   else 
+        completedRows   = completedRows + 1;
+        iCycle          = iCycle + 1;
+        cycleTimeIndex  = 1;
+        totalTime       = 0;
+        
+        pressureMeasurement                      = P600rpm_max_1ms(iSample);
+      	pressureMatrix(iCycle,cycleTimeIndex)    = pressureMeasurement;
+      	totalTime                                = totalTime + sampleTime;
+    	cycleTimeIndex                           = cycleTimeIndex + 1;
+   end
+   iSample      = iSample + 1; 
+end
+
+pressureMatrix  = pressureMatrix(1:completedRows,:);
+cycleTimeVector = 0 : sampleTime : (rotorPeriod-sampleTime);
+
+% Plot the results
+cyclePlot = figure;
+hold on
+for iCycle = 1:completedRows
+    plot(cycleTimeVector,pressureMatrix(iCycle,:),'color',COLOR+0.8,'LineWidth',4)
+end
+hold off
+
+hold on
+plot(cycleTimeVector,mean(pressureMatrix),'color',COLOR2,'LineWidth',4)
+hold off
+
+
